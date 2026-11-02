@@ -1,41 +1,7 @@
-/*
- * mymemory.c
- *
- * Implementação da biblioteca de gerenciamento de memória.
- *
- * Regra do enunciado: malloc/free SÓ podem ser usados para
- *   - o pool (o bloco grande),
- *   - a struct mymemory_t,
- *   - os nós da lista (allocation_t).
- * As alocações do usuário são "pedaços" do pool, calculados com
- * aritmética de ponteiros usando (char *), que anda de 1 em 1 byte.
- *
- * IDEIA CENTRAL (lista ordenada por endereço -> lacunas):
- *
- *   pool
- *   v
- *   +--------+==========+--------+======================+
- *   | bloco A|  lacuna  | bloco B|        lacuna        |
- *   +--------+==========+--------+======================+
- *            ^          ^        ^                      ^
- *     fim de A      início de B  fim de B          fim do pool
- *
- *   início da lacuna = fim do bloco anterior
- *                      (ou o início do pool, se não há bloco anterior)
- *   fim da lacuna    = início do bloco seguinte
- *                      (ou o fim do pool, se não há bloco seguinte)
- *   fim de um bloco  = (char *)bloco->start + bloco->size
- *   fim do pool      = (char *)memory->pool + memory->total_size
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "mymemory.h"
 
-/*
- * Estratégia atual. "static" aqui significa que esta variável só é
- * visível dentro deste arquivo (ninguém de fora mexe nela diretamente).
- */
 static strategy_t estrategia_atual = FIRST_FIT;
 
 void mymemory_set_strategy(strategy_t strategy)
@@ -43,134 +9,214 @@ void mymemory_set_strategy(strategy_t strategy)
     estrategia_atual = strategy;
 }
 
-/*
- * Cria o gerenciador e o pool de 'size' bytes.
- * Retorna NULL se não for possível.
- *
- * PASSO A PASSO:
- *   1. Se size == 0, retorne NULL (não faz sentido um pool vazio).
- *   2. Aloque (malloc) uma mymemory_t. Se der NULL, retorne NULL.
- *   3. Aloque (malloc) o pool de 'size' bytes.
- *      Se der NULL: libere a mymemory_t do passo 2 e retorne NULL
- *      (senão ela vazaria!).
- *   4. Preencha os campos: pool, total_size = size, head = NULL
- *      (nenhuma alocação ainda).
- *   5. Retorne o ponteiro para a mymemory_t.
- */
 mymemory_t *mymemory_init(size_t size)
 {
-    /* TODO: implementar */
-    (void)size; /* evita warning de "parâmetro não usado"; apague ao implementar */
-    return NULL;
+    if (size == 0)
+        return NULL;
+
+    mymemory_t *memory = malloc(sizeof(mymemory_t));
+    if (memory == NULL)
+        return NULL;
+
+    memory->pool = malloc(size);
+    if (memory->pool == NULL) {
+        free(memory);
+        return NULL;
+    }
+
+    memory->total_size = size;
+    memory->head = NULL;
+    return memory;
 }
 
-/*
- * Tenta alocar 'size' bytes dentro do pool, usando a estratégia atual.
- * Retorna o endereço do início do bloco, ou NULL se não couber.
- *
- * PASSO A PASSO:
- *   1. Se memory == NULL ou size == 0, retorne NULL.
- *   2. Percorra TODAS as lacunas, da esquerda para a direita, usando dois
- *      ponteiros: 'anterior' (o bloco antes da lacuna; NULL no início) e
- *      'atual' (o bloco depois da lacuna; NULL depois do último bloco).
- *      Atenção: são (número de blocos + 1) lacunas, então não esqueça a
- *      última, entre o último bloco e o fim do pool.
- *   3. Para cada lacuna, calcule o início, o fim e o tamanho (fim - início).
- *      Se o bloco couber (tamanho >= size), decida conforme a estratégia:
- *        FIRST_FIT: escolha esta lacuna e pare de procurar.
- *        BEST_FIT:  escolha esta se for MENOR que a melhor achada até agora.
- *        WORST_FIT: escolha esta se for MAIOR que a melhor achada até agora.
- *      Guarde o início da lacuna escolhida e o bloco 'anterior' a ela.
- *   4. Se nenhuma lacuna serviu, retorne NULL.
- *   5. Crie (malloc) um novo allocation_t e preencha start e size.
- *      Se o malloc falhar, retorne NULL.
- *   6. Insira o novo nó na lista LOGO DEPOIS do 'anterior' escolhido
- *      (se o 'anterior' for NULL, o novo nó vira o head).
- *      Assim a lista continua ordenada por endereço.
- *   7. Retorne o start do novo bloco.
- */
 void *mymemory_alloc(mymemory_t *memory, size_t size)
 {
-    /* TODO: implementar */
-    (void)memory;
-    (void)size;
-    return NULL;
+    if (memory == NULL || size == 0)
+        return NULL;
+
+    char *fim_pool = (char *)memory->pool + memory->total_size;
+    allocation_t *anterior = NULL;
+    allocation_t *atual = memory->head;
+
+    char *melhor_inicio = NULL;
+    size_t melhor_tamanho = 0;
+    allocation_t *melhor_anterior = NULL;
+
+    while (1) {
+        char *inicio_lacuna;
+        char *fim_lacuna;
+
+        if (anterior == NULL)
+            inicio_lacuna = (char *)memory->pool;
+        else
+            inicio_lacuna = (char *)anterior->start + anterior->size;
+
+        if (atual == NULL)
+            fim_lacuna = fim_pool;
+        else
+            fim_lacuna = (char *)atual->start;
+
+        size_t tamanho_lacuna = (size_t)(fim_lacuna - inicio_lacuna);
+
+        if (tamanho_lacuna >= size) {
+            int escolher = 0;
+
+            if (melhor_inicio == NULL)
+                escolher = 1;
+            else if (estrategia_atual == BEST_FIT && tamanho_lacuna < melhor_tamanho)
+                escolher = 1;
+            else if (estrategia_atual == WORST_FIT && tamanho_lacuna > melhor_tamanho)
+                escolher = 1;
+
+            if (escolher) {
+                melhor_inicio = inicio_lacuna;
+                melhor_tamanho = tamanho_lacuna;
+                melhor_anterior = anterior;
+            }
+
+            if (estrategia_atual == FIRST_FIT)
+                break;
+        }
+
+        if (atual == NULL)
+            break;
+
+        anterior = atual;
+        atual = atual->next;
+    }
+
+    if (melhor_inicio == NULL)
+        return NULL;
+
+    allocation_t *novo = malloc(sizeof(allocation_t));
+    if (novo == NULL)
+        return NULL;
+
+    novo->start = melhor_inicio;
+    novo->size = size;
+
+    if (melhor_anterior == NULL) {
+        novo->next = memory->head;
+        memory->head = novo;
+    } else {
+        novo->next = melhor_anterior->next;
+        melhor_anterior->next = novo;
+    }
+
+    return novo->start;
 }
 
-/*
- * Libera o bloco que começa em 'ptr'.
- * Se ptr não for o início de um bloco alocado, não faz nada.
- *
- * PASSO A PASSO:
- *   1. Se memory == NULL ou ptr == NULL, retorne.
- *   2. Percorra a lista com 'anterior' e 'atual' procurando o nó em que
- *      atual->start == ptr.
- *   3. Se não achou, retorne (ptr inválido: não faz nada).
- *   4. Tire o nó da lista:
- *        se o 'anterior' existe -> anterior->next = atual->next;
- *        se não (era o head)    -> memory->head = atual->next;
- *   5. free(atual): libera só o NÓ de controle. Os bytes do pool não
- *      precisam de nada: como nenhum nó os cobre mais, eles passam
- *      automaticamente a fazer parte de uma lacuna.
- */
 void mymemory_free(mymemory_t *memory, void *ptr)
 {
-    /* TODO: implementar */
-    (void)memory;
-    (void)ptr;
+    if (memory == NULL || ptr == NULL)
+        return;
+
+    allocation_t *anterior = NULL;
+    allocation_t *atual = memory->head;
+
+    while (atual != NULL && atual->start != ptr) {
+        anterior = atual;
+        atual = atual->next;
+    }
+
+    if (atual == NULL)
+        return;
+
+    if (anterior == NULL)
+        memory->head = atual->next;
+    else
+        anterior->next = atual->next;
+
+    free(atual);
 }
 
-/*
- * Mostra todas as alocações atuais (início e tamanho de cada uma).
- *
- * PASSO A PASSO:
- *   1. Se memory == NULL, retorne.
- *   2. Se a lista estiver vazia, imprima algo como "nenhuma alocação".
- *   3. Percorra a lista imprimindo, para cada bloco:
- *        - o endereço (formato %p, com cast para (void *))
- *        - o deslocamento desde o início do pool, que é mais fácil de ler:
- *          (char *)bloco->start - (char *)memory->pool   (formato %td)
- *        - o tamanho (formato %zu)
- */
 void mymemory_display(mymemory_t *memory)
 {
-    /* TODO: implementar */
-    (void)memory;
+    if (memory == NULL)
+        return;
+
+    printf("   Alocacoes atuais:\n");
+
+    if (memory->head == NULL) {
+        printf("     (nenhuma alocacao)\n");
+        return;
+    }
+
+    allocation_t *atual = memory->head;
+    while (atual != NULL) {
+        printf("     endereco %p | deslocamento %5td | tamanho %5zu bytes\n",
+               atual->start,
+               (char *)atual->start - (char *)memory->pool,
+               atual->size);
+        atual = atual->next;
+    }
 }
 
-/*
- * Mostra estatísticas gerais da memória.
- *
- * PASSO A PASSO:
- *   1. Se memory == NULL, retorne.
- *   2. Percorra a lista contando:
- *        - o número de alocações
- *        - o total alocado (soma dos size)
- *   3. Memória livre = total_size - total alocado.
- *   4. Percorra as lacunas (igual ao mymemory_alloc) para achar:
- *        - o maior bloco livre contíguo (a maior lacuna)
- *        - o número de fragmentos livres (lacunas com tamanho > 0)
- *   5. Imprima tudo.
- */
 void mymemory_stats(mymemory_t *memory)
 {
-    /* TODO: implementar */
-    (void)memory;
+    if (memory == NULL)
+        return;
+
+    int num_alocacoes = 0;
+    size_t total_alocado = 0;
+    allocation_t *atual;
+
+    for (atual = memory->head; atual != NULL; atual = atual->next) {
+        num_alocacoes++;
+        total_alocado += atual->size;
+    }
+
+    size_t total_livre = memory->total_size - total_alocado;
+
+    char *fim_pool = (char *)memory->pool + memory->total_size;
+    char *inicio_lacuna = (char *)memory->pool;
+    size_t maior_lacuna = 0;
+    int num_fragmentos = 0;
+
+    atual = memory->head;
+    while (1) {
+        char *fim_lacuna;
+
+        if (atual == NULL)
+            fim_lacuna = fim_pool;
+        else
+            fim_lacuna = (char *)atual->start;
+
+        size_t tamanho_lacuna = (size_t)(fim_lacuna - inicio_lacuna);
+
+        if (tamanho_lacuna > 0) {
+            num_fragmentos++;
+            if (tamanho_lacuna > maior_lacuna)
+                maior_lacuna = tamanho_lacuna;
+        }
+
+        if (atual == NULL)
+            break;
+
+        inicio_lacuna = (char *)atual->start + atual->size;
+        atual = atual->next;
+    }
+
+    printf("   Estatisticas:\n");
+    printf("     numero de alocacoes     : %d\n", num_alocacoes);
+    printf("     memoria total alocada   : %zu bytes\n", total_alocado);
+    printf("     memoria total livre     : %zu bytes\n", total_livre);
+    printf("     maior bloco livre       : %zu bytes\n", maior_lacuna);
+    printf("     fragmentos livres       : %d\n", num_fragmentos);
 }
 
-/*
- * Libera TUDO: todos os nós da lista, o pool e a própria mymemory_t.
- *
- * PASSO A PASSO:
- *   1. Se memory == NULL, retorne.
- *   2. Percorra a lista liberando cada nó.
- *      CUIDADO: guarde o 'next' ANTES de dar free no nó atual
- *      (depois do free, ler atual->next é use-after-free!).
- *   3. free(memory->pool).
- *   4. free(memory).
- */
 void mymemory_cleanup(mymemory_t *memory)
 {
-    /* TODO: implementar */
-    (void)memory;
+    if (memory == NULL)
+        return;
+
+    allocation_t *atual = memory->head;
+    while (atual != NULL) {
+        allocation_t *proximo = atual->next;
+        free(atual);
+        atual = proximo;
+    }
+
+    free(memory->pool);
+    free(memory);
 }

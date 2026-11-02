@@ -1,14 +1,3 @@
-/*
- * main.c
- *
- * Programa de testes da biblioteca mymemory.
- *
- * Parte 1 (teste_basico): poucos blocos, com display a cada passo, para
- *          enxergar o que acontece; inclui os casos especiais.
- * Parte 2 (teste_estrategias): 50 blocos de tamanhos variados, alocados
- *          em 3 ordens diferentes, para cada uma das 3 estratégias.
- */
-
 #include <stdio.h>
 #include <string.h>
 #include "mymemory.h"
@@ -16,7 +5,6 @@
 #define NUM_BLOCOS 50
 #define POOL_ESTRATEGIAS 12000
 
-/* 50 tamanhos variados (soma = 11480 bytes) */
 static const size_t tamanhos[NUM_BLOCOS] = {
      10,  25,  50, 100, 250, 500, 1000,  15,  30,  60,
     120, 300, 600,  40,  80, 200,  400, 800,  20,  45,
@@ -25,7 +13,6 @@ static const size_t tamanhos[NUM_BLOCOS] = {
     520,  33,  66, 125, 375, 750,    8,  27,  81, 243
 };
 
-/* Pedidos feitos depois de liberar metade dos blocos (criando lacunas) */
 #define NUM_SEGUNDA_RODADA 10
 static const size_t segunda_rodada[NUM_SEGUNDA_RODADA] = {
     300, 45, 700, 120, 1000, 60, 250, 15, 500, 90
@@ -36,12 +23,6 @@ static const char *nome_estrategia[] = { "FIRST FIT", "BEST FIT", "WORST FIT" };
 enum { CRESCENTE, DECRESCENTE, INTERCALADA };
 static const char *nome_ordem[] = { "crescente", "decrescente", "intercalada" };
 
-/*
- * Converte a posição 'i' da sequência no índice do vetor de tamanhos,
- * de acordo com a ordem desejada.
- * INTERCALADA: (i * 7) % 50 visita todos os índices de 0 a 49 sem repetir,
- * porque 7 e 50 não têm divisor comum (0, 7, 14, ..., 49, 6, 13, ...).
- */
 static int indice_na_ordem(int i, int ordem)
 {
     if (ordem == DECRESCENTE)
@@ -51,11 +32,6 @@ static int indice_na_ordem(int i, int ordem)
     return i;
 }
 
-/*
- * Confere se a lista está coerente: blocos dentro do pool, em ordem de
- * endereço e sem sobreposição. Ajuda a achar bugs no alloc/free.
- * Retorna 1 se está tudo certo, 0 caso contrário.
- */
 static int verificar(mymemory_t *memory)
 {
     char *inicio_pool = (char *)memory->pool;
@@ -77,8 +53,6 @@ static int verificar(mymemory_t *memory)
     return 1;
 }
 
-/* Escreve em todos os bytes do bloco: se o endereço for inválido, o
- * programa (ou o valgrind) acusa o problema. */
 static void usar_bloco(void *p, size_t size)
 {
     if (p != NULL)
@@ -162,7 +136,6 @@ static void executar_cenario(strategy_t estrategia, int ordem)
         return;
     }
 
-    /* 1) Aloca os 50 blocos na ordem escolhida */
     ok = 0;
     for (i = 0; i < NUM_BLOCOS; i++) {
         int k = indice_na_ordem(i, ordem);
@@ -173,13 +146,11 @@ static void executar_cenario(strategy_t estrategia, int ordem)
     }
     printf("1) alocados %d de %d blocos\n", ok, NUM_BLOCOS);
 
-    /* 2) Libera os blocos de índice ímpar, criando várias lacunas */
     for (i = 1; i < NUM_BLOCOS; i += 2)
         mymemory_free(mem, ptrs[i]);
     printf("2) liberados os blocos de indice impar\n");
     mymemory_stats(mem);
 
-    /* 3) Novos pedidos: aqui as estratégias dão resultados diferentes */
     printf("3) segunda rodada de pedidos:\n");
     for (i = 0; i < NUM_SEGUNDA_RODADA; i++) {
         void *p = mymemory_alloc(mem, segunda_rodada[i]);
