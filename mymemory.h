@@ -15,19 +15,11 @@ typedef struct {
     allocation_t *head;
 } mymemory_t;
 
-typedef enum {
-    FIRST_FIT,
-    BEST_FIT,
-    WORST_FIT
-} strategy_t;
-
 mymemory_t *mymemory_init(size_t size);
 void *mymemory_alloc(mymemory_t *memory, size_t size);
 void mymemory_free(mymemory_t *memory, void *ptr);
 void mymemory_display(mymemory_t *memory);
 void mymemory_stats(mymemory_t *memory);
 void mymemory_cleanup(mymemory_t *memory);
-
-void mymemory_set_strategy(strategy_t strategy);
 
 #endif

@@ -2,23 +2,18 @@
 #include <stdlib.h>
 #include "mymemory.h"
 
-static strategy_t estrategia_atual = FIRST_FIT;
-
-void mymemory_set_strategy(strategy_t strategy)
-{
-    estrategia_atual = strategy;
-}
-
 mymemory_t *mymemory_init(size_t size)
 {
     if (size == 0)
         return NULL;
 
     mymemory_t *memory = malloc(sizeof(mymemory_t));
+
     if (memory == NULL)
         return NULL;
 
     memory->pool = malloc(size);
+
     if (memory->pool == NULL) {
         free(memory);
         return NULL;
@@ -26,6 +21,7 @@ mymemory_t *mymemory_init(size_t size)
 
     memory->total_size = size;
     memory->head = NULL;
+
     return memory;
 }
 
@@ -35,17 +31,20 @@ void *mymemory_alloc(mymemory_t *memory, size_t size)
         return NULL;
 
     char *fim_pool = (char *)memory->pool + memory->total_size;
+
     allocation_t *anterior = NULL;
     allocation_t *atual = memory->head;
 
-    char *melhor_inicio = NULL;
-    size_t melhor_tamanho = 0;
-    allocation_t *melhor_anterior = NULL;
+    char *inicio_lacuna;
+    char *fim_lacuna;
+
+    /*
+     * FIRST FIT:
+     * Percorre as lacunas em ordem de endereço.
+     * A primeira lacuna que comportar o pedido será utilizada.
+     */
 
     while (1) {
-        char *inicio_lacuna;
-        char *fim_lacuna;
-
         if (anterior == NULL)
             inicio_lacuna = (char *)memory->pool;
         else
@@ -58,49 +57,30 @@ void *mymemory_alloc(mymemory_t *memory, size_t size)
 
         size_t tamanho_lacuna = (size_t)(fim_lacuna - inicio_lacuna);
 
-        if (tamanho_lacuna >= size) {
-            int escolher = 0;
-
-            if (melhor_inicio == NULL)
-                escolher = 1;
-            else if (estrategia_atual == BEST_FIT && tamanho_lacuna < melhor_tamanho)
-                escolher = 1;
-            else if (estrategia_atual == WORST_FIT && tamanho_lacuna > melhor_tamanho)
-                escolher = 1;
-
-            if (escolher) {
-                melhor_inicio = inicio_lacuna;
-                melhor_tamanho = tamanho_lacuna;
-                melhor_anterior = anterior;
-            }
-
-            if (estrategia_atual == FIRST_FIT)
-                break;
-        }
+        if (tamanho_lacuna >= size)
+            break;
 
         if (atual == NULL)
-            break;
+            return NULL;
 
         anterior = atual;
         atual = atual->next;
     }
 
-    if (melhor_inicio == NULL)
-        return NULL;
-
     allocation_t *novo = malloc(sizeof(allocation_t));
+
     if (novo == NULL)
         return NULL;
 
-    novo->start = melhor_inicio;
+    novo->start = inicio_lacuna;
     novo->size = size;
 
-    if (melhor_anterior == NULL) {
+    if (anterior == NULL) {
         novo->next = memory->head;
         memory->head = novo;
     } else {
-        novo->next = melhor_anterior->next;
-        melhor_anterior->next = novo;
+        novo->next = anterior->next;
+        anterior->next = novo;
     }
 
     return novo->start;
@@ -143,11 +123,13 @@ void mymemory_display(mymemory_t *memory)
     }
 
     allocation_t *atual = memory->head;
+
     while (atual != NULL) {
         printf("     endereco %p | deslocamento %5td | tamanho %5zu bytes\n",
                atual->start,
                (char *)atual->start - (char *)memory->pool,
                atual->size);
+
         atual = atual->next;
     }
 }
@@ -159,6 +141,7 @@ void mymemory_stats(mymemory_t *memory)
 
     int num_alocacoes = 0;
     size_t total_alocado = 0;
+
     allocation_t *atual;
 
     for (atual = memory->head; atual != NULL; atual = atual->next) {
@@ -170,10 +153,12 @@ void mymemory_stats(mymemory_t *memory)
 
     char *fim_pool = (char *)memory->pool + memory->total_size;
     char *inicio_lacuna = (char *)memory->pool;
+
     size_t maior_lacuna = 0;
     int num_fragmentos = 0;
 
     atual = memory->head;
+
     while (1) {
         char *fim_lacuna;
 
@@ -186,6 +171,7 @@ void mymemory_stats(mymemory_t *memory)
 
         if (tamanho_lacuna > 0) {
             num_fragmentos++;
+
             if (tamanho_lacuna > maior_lacuna)
                 maior_lacuna = tamanho_lacuna;
         }
@@ -194,6 +180,7 @@ void mymemory_stats(mymemory_t *memory)
             break;
 
         inicio_lacuna = (char *)atual->start + atual->size;
+
         atual = atual->next;
     }
 
@@ -202,7 +189,7 @@ void mymemory_stats(mymemory_t *memory)
     printf("     memoria total alocada   : %zu bytes\n", total_alocado);
     printf("     memoria total livre     : %zu bytes\n", total_livre);
     printf("     maior bloco livre       : %zu bytes\n", maior_lacuna);
-    printf("     fragmentos livres       : %d\n", num_fragmentos);
+    printf("     fragmentos livres      : %d\n", num_fragmentos);
 }
 
 void mymemory_cleanup(mymemory_t *memory)
@@ -211,9 +198,12 @@ void mymemory_cleanup(mymemory_t *memory)
         return;
 
     allocation_t *atual = memory->head;
+
     while (atual != NULL) {
         allocation_t *proximo = atual->next;
+
         free(atual);
+
         atual = proximo;
     }
 
