@@ -118,30 +118,30 @@ static void teste_basico(void)
 
     printf("\n-> casos especiais (nada deve quebrar):\n");
 
-    printf("   alloc de 0 bytes        -> %s\n",
+    printf("alloc de 0 bytes-> %s\n",
            mymemory_alloc(mem, 0) == NULL ? "NULL (ok)" : "NAO NULL (errado)");
 
-    printf("   alloc de 5000 bytes     -> %s\n",
+    printf("alloc de 5000 bytes-> %s\n",
            mymemory_alloc(mem, 5000) == NULL ? "NULL (ok)" : "NAO NULL (errado)");
 
     mymemory_free(mem, NULL);
-    printf("   free(NULL)              -> ok\n");
+    printf("free(NULL)-> ok\n");
 
     mymemory_free(mem, &x);
-    printf("   free de ptr fora do pool -> ok\n");
+    printf("free de ptr fora do pool-> ok\n");
 
     mymemory_free(mem, (char *)a + 10);
-    printf("   free do meio de um bloco -> ok\n");
+    printf("free do meio de um bloco-> ok\n");
 
     mymemory_free(mem, b);
-    printf("   free duplo do mesmo ptr  -> ok\n");
+    printf("free duplo do mesmo ptr-> ok\n");
 
     printf("\n-> estado final:\n");
 
     mymemory_display(mem);
     mymemory_stats(mem);
 
-    printf("   verificacao da lista: %s\n",
+    printf("verificacao da lista: %s\n",
            verificar(mem) ? "ok" : "FALHOU");
 
     mymemory_cleanup(mem);
