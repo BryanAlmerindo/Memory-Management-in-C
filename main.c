@@ -222,6 +222,18 @@ static void executar_cenario(int ordem)
     mymemory_cleanup(mem);
 }
 
+/*
+Utilização de IA: Para realizar o teste basico, por ser mais simples, fizemos manualmente,
+já o teste de first_fit completo, utilizamos IA para gerar os prints e os loopings/iterações 
+da lista de nodos. 
+
+Ao final da implementação, garantimos que o teste seguia os critérios 
+propostos pelo enunciado:
+
+1. Utilizar um conjunto de blocos de tamanho variado
+2. Variar a ordem das alocações. 
+3. Recomenda-se um conjunto de aproximadamente 50 blocos
+*/
 static void teste_first_fit(void)
 {
     int ordem;
@@ -234,6 +246,13 @@ static void teste_first_fit(void)
         executar_cenario(ordem);
 }
 
+/*
+Utilização de IA: Com apoio de IA, descobrimos a ferramenta VALGRIND
+
+Esta ferramenta ajuda a testar e verificar os Memory Leaks do sistema,
+após a instalação, rodamos o sistema para garantir a qualidade do nosso
+gerenciador. 
+*/
 int main(void)
 {
     teste_basico();
