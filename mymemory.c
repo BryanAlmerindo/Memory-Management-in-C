@@ -115,17 +115,17 @@ void mymemory_display(mymemory_t *memory)
     if (memory == NULL)
         return;
 
-    printf("   Alocacoes atuais:\n");
+    printf("fAlocacoes atuais:\n");
 
     if (memory->head == NULL) {
-        printf("     (nenhuma alocacao)\n");
+        printf("(nenhuma alocacao)\n");
         return;
     }
 
     allocation_t *atual = memory->head;
 
     while (atual != NULL) {
-        printf("     endereco %p | deslocamento %5td | tamanho %5zu bytes\n",
+        printf("endereco %p | deslocamento %5td | tamanho %5zu bytes\n",
                atual->start,
                (char *)atual->start - (char *)memory->pool,
                atual->size);
@@ -184,12 +184,12 @@ void mymemory_stats(mymemory_t *memory)
         atual = atual->next;
     }
 
-    printf("   Estatisticas:\n");
-    printf("     numero de alocacoes     : %d\n", num_alocacoes);
-    printf("     memoria total alocada   : %zu bytes\n", total_alocado);
-    printf("     memoria total livre     : %zu bytes\n", total_livre);
-    printf("     maior bloco livre       : %zu bytes\n", maior_lacuna);
-    printf("     fragmentos livres      : %d\n", num_fragmentos);
+    printf("Estatisticas:\n");
+    printf("numero de alocacoes: %d\n", num_alocacoes);
+    printf("memoria total alocada: %zu bytes\n", total_alocado);
+    printf("memoria total livre: %zu bytes\n", total_livre);
+    printf("maior bloco livre: %zu bytes\n", maior_lacuna);
+    printf("fragmentos livres: %d\n", num_fragmentos);
 }
 
 void mymemory_cleanup(mymemory_t *memory)

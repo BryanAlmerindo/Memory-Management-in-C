@@ -53,7 +53,7 @@ static int verificar(mymemory_t *memory)
 
         if (inicio < fim_anterior || fim > fim_pool)
         {
-            printf("  [ERRO] bloco em %p (tamanho %zu) fora do pool, "
+            printf("ERRO] bloco em %p (tamanho %zu) fora do pool, "
                    "fora de ordem ou sobreposto!\n",
                    atual->start, atual->size);
 
@@ -202,20 +202,20 @@ static void executar_cenario(int ordem)
 
         if (p != NULL)
         {
-            printf("   %4zu bytes -> deslocamento %td\n",
+            printf("%4zu bytes -> deslocamento %td\n",
                    segunda_rodada[i],
                    (char *)p - (char *)mem->pool);
         }
         else
         {
-            printf("   %4zu bytes -> FALHOU (sem lacuna suficiente)\n",
+            printf("%4zu bytes -> FALHOU (sem lacuna suficiente)\n",
                    segunda_rodada[i]);
         }
     }
 
     mymemory_stats(mem);
 
-    printf("   verificacao da lista: %s\n\n",
+    printf("verificacao da lista: %s\n\n",
            verificar(mem) ? "ok" : "FALHOU");
 
     mymemory_cleanup(mem);
