@@ -134,13 +134,6 @@ void mymemory_display(mymemory_t *memory)
     }
 }
 
-/*
-Utilização de IA: Para evitar trabalho braçal de realizar iterações básicas somar ++ em uma 
-variavel de qtd_alocacoes, utilizamos IA para progredir rapidamente e fazer as verificações. 
-
-Validamos também, para o mymemory_stats realizar os prints que o enunciado pedia, além disso
-os testes corresponderam corretamente ao esperado pelo grupo.
-*/
 void mymemory_stats(mymemory_t *memory)
 {
     if (memory == NULL)
