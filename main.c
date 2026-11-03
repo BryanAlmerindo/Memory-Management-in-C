@@ -53,7 +53,7 @@ static int verificar(mymemory_t *memory)
 
         if (inicio < fim_anterior || fim > fim_pool)
         {
-            printf("ERRO] bloco em %p (tamanho %zu) fora do pool, "
+            printf("[ERRO] bloco em %p (tamanho %zu) fora do pool, "
                    "fora de ordem ou sobreposto!\n",
                    atual->start, atual->size);
 
@@ -133,7 +133,8 @@ static void teste_basico(void)
     mymemory_free(mem, (char *)a + 10);
     printf("free do meio de um bloco-> ok\n");
 
-    mymemory_free(mem, b);
+    mymemory_free(mem, d);
+    mymemory_free(mem, d);
     printf("free duplo do mesmo ptr-> ok\n");
 
     printf("\n-> estado final:\n");
